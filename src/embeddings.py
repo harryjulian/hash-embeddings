@@ -5,6 +5,7 @@ import jax.numpy as jnp
 
 
 def encode_text(text: str) -> Array:
+  """Return string as unicode representation of chars."""
   return jnp.array([ord(i) for i in text])
 
 
@@ -13,12 +14,12 @@ def rolling_hash(encoded: Array, p: int = 31, m: int = 10**9+7) -> Array:
   """Given a piece of text, compute it's rolling hash.
   
   Args:
-    encoded: jnp.array
+    encoded: Array
     p: int
     m: int
   
   Returns:
-    hash value
+    hash values: Array
   """
 
   def body_fn(result, elem):
@@ -35,6 +36,7 @@ def rolling_hash(encoded: Array, p: int = 31, m: int = 10**9+7) -> Array:
 
 @partial(jax.jit, static_argnums=(1,))
 def sliding_window(a: Array, size: int) -> Array:
+  """Get all sliding windows of size over a."""
   starts = jnp.arange(len(a) - size + 1)
   return jax.vmap(lambda start: jax.lax.dynamic_slice(a, (start,), (size,)))(starts)
 
@@ -43,11 +45,11 @@ def hash_embedding(encoded: Array, seed: int = 42, b: int = 10**9+7, n: int = 3,
     """Compute hash embedding of a given piece of text.
     
     Args:
-        encoded: jnp.array[c,] - encoded text we're embedding
+        encoded: Array -  encoded text we're embedding
         seed: int - random seed - MUST be held constant across embeddings.
-        b: int - ...
-        n: int - maximum size of an i-gram
-        d: int - the dimension of the embedding
+        b: int - scalar bucket size.
+        n: int - maximum size of an i-gram.
+        d: int - the dimension of the embedding.
     
     Returns:
         embedding: jnp.array[d,]
@@ -55,14 +57,14 @@ def hash_embedding(encoded: Array, seed: int = 42, b: int = 10**9+7, n: int = 3,
 
     # Initialize h and partitions
     partitions = jnp.sum(jnp.arange(1, n+1))
-    h = jax.random.split(jax.random.PRNGKey(seed), d)[:, 0].reshape(int(d / partitions), partitions) # reduce to 1d
+    h = jax.random.split(jax.random.PRNGKey(seed), d)[:, 0].reshape((d / partitions).astype(int), partitions) # reduce to 1d
 
     # Initialize loop variables
     embedding = jnp.zeros((d,))
     partition_idx = jnp.arange(0, d+1, int(d / partitions))
     run = 0
 
-    # TODO: Alter this to jax.lax.scan
+    # TODO: It'd be nice to move this to use jax.lax.scan
     for i in range(1, n+1):
 
         # Compute rolling hash
@@ -74,7 +76,7 @@ def hash_embedding(encoded: Array, seed: int = 42, b: int = 10**9+7, n: int = 3,
 
         # Normalize
         p = p % b
-        p = p - jnp.greater(p, b/2) * b
+        p = p - jnp.greater(p, b / 2) * b
         p = p / (b / 2)
 
         # Average

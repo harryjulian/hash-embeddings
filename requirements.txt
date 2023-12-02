@@ -1,3 +1,4 @@
 jax
-chex
+jaxlib
 pytest
+pytest-benchmark
