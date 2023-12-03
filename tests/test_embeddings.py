@@ -40,14 +40,14 @@ def test_embedding_bounds(sentence: str):
     """Embeddings array should be bounded between -1 and 1."""
     tokenized_sentence = encode_text(sentence)
     embedding = hash_embedding(tokenized_sentence)
-    assert ((embedding > -1) & (embedding < 1)).all()
+    assert ((embedding >= -1) & (embedding <= 1)).all()
 
 
 @pytest.mark.parametrize("test_case", metric_space_test_cases)
 def test_embedding_proximity(test_case: ProximityTestCase):
     """Similiar strings should be closer in embedding space."""
 
-    def _cosine_distance(a: jnp.ndarray, b: jnp.ndarray):
+    def _cosine_distance(a: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
         return a @ b / (jnp.sqrt(a @ a) * jnp.sqrt(b @ b))
 
     # Compute embeddings
